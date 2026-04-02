@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FPS射击游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            touch-action: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: #1a1a2e;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #healthBar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #healthFill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #ff4444, #ff6666);
+            transition: width 0.3s;
+        }
+
+        #healthText {
+            position: absolute;
+            bottom: 45px;
+            left: 20px;
+            color: #fff;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #ammoText {
+            position: absolute;
+            bottom: 45px;
+            right: 20px;
+            color: #fff;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #scoreText {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+        }
+
+        #crosshair::before {
+            width: 2px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #crosshair::after {
+            width: 10px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #mobileControls {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: block;
+            }
+        }
+
+        .joystick-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+
+        .joystick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+        }
+
+        .fire-button {
+            position: absolute;
+            bottom: 50px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,0,0,0.5);
+            border: 3px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .reload-button {
+            position: absolute;
+            bottom: 150px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(0,100,255,0.5);
+            border: 3px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+
+        #startScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255,0,0,0.8);
+        }
+
+        #startScreen p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            padding: 0 20px;
+        }
+
+        #startButton {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: linear-gradient(to right, #ff4444, #ff6666);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.2s;
+        }
+
+        #startButton:hover {
+            transform: scale(1.1);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+
+        #gameOver h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ff4444;
+        }
+
+        #gameOver p {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        #restartButton {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: linear-gradient(to right, #44ff44, #66ff66);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="healthText">生命值: 100</div>
+        <div id="healthBar">
+            <div id="healthFill"></div>
+        </div>
+        <div id="ammoText">弹药: 30/90</div>
+        <div id="scoreText">得分: 0</div>
+        <div id="crosshair"></div>
+        
+        <div id="mobileControls">
+            <div class="joystick-container" id="moveJoystick">
+                <div class="joystick" id="moveJoystickKnob"></div>
+            </div>
+            <div class="fire-button" id="fireButton">射击</div>
+            <div class="reload-button" id="reloadButton">换弹</div>
+        </div>
+    </div>
+
+    <div id="startScreen">
+        <h1>FPS射击游戏</h1>
+        <p>电脑操作: WASD移动，鼠标瞄准，左键射击，R换弹<br>手机操作: 左侧摇杆移动，右侧按钮射击和换弹</p>
+        <button id="startButton">开始游戏</button>
+    </div>
+
+    <div id="gameOver">
+        <h1>游戏结束</h1>
+        <p id="finalScore">最终得分: 0</p>
+        <button id="restartButton">重新开始</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
